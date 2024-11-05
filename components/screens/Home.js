@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  FlatList,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { COLOURS, Items } from '../database/Database';
@@ -21,6 +22,14 @@ const Home = ({ navigation, route }) => {
   const [isDropdownVisible, setDropdownVisible] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const username = route?.params?.username;
+
+  const menuItems = [
+    { label: 'Home', icon: 'home', route: 'Home', backgroundColor: '#FFD1DC' },
+    { label: 'Profile', icon: 'user', route: 'Profile', backgroundColor: '#FFD1DC' },
+   
+    { label: 'Contact', icon: 'check-square', route: 'Contact', backgroundColor: '#FFD1DC' },
+    { label: 'About', icon: 'list', route: 'About', backgroundColor: '#FFD1DC' },
+  ];
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -44,7 +53,6 @@ const Home = ({ navigation, route }) => {
     setAccessory(accessoryList);
   };
 
- 
   const loadFavorites = async () => {
     try {
       const storedFavorites = await AsyncStorage.getItem(`${username}_favorites`);
@@ -63,20 +71,26 @@ const Home = ({ navigation, route }) => {
 
       let updatedFavorites;
       if (currentFavorites.some(item => item.id === product.id)) {
-        // Remove from favorites if already exists
         updatedFavorites = currentFavorites.filter((item) => item.id !== product.id);
       } else {
-        // Add to favorites if not exists
         updatedFavorites = [...currentFavorites, product];
       }
 
-      setFavorites(updatedFavorites); // Update state
-      await AsyncStorage.setItem(`${username}_favorites`, JSON.stringify(updatedFavorites)); // Save to AsyncStorage
+      setFavorites(updatedFavorites);
+      await AsyncStorage.setItem(`${username}_favorites`, JSON.stringify(updatedFavorites));
     } catch (error) {
       console.error('Error updating favorites:', error);
     }
   };
 
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('username');
+    setDropdownVisible(false);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
 
   const ProductCard = ({ data }) => (
     <TouchableOpacity
@@ -89,10 +103,7 @@ const Home = ({ navigation, route }) => {
             <Text style={styles.discountText}>{data.offPercentage}%</Text>
           </View>
         )}
-        <Image
-          source={data.productImage}
-          style={styles.productImage}
-        />
+        <Image source={data.productImage} style={styles.productImage} />
         <TouchableOpacity
           style={styles.favoriteIconContainer}
           onPress={() => toggleFavorite(data)}
@@ -107,62 +118,61 @@ const Home = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
       <Text style={styles.productName}>{data.productName}</Text>
-      {data.category === 'accessory' && (
-        <View style={styles.availabilityContainer}>
-          <FontAwesome
-            name="circle"
-            style={[styles.availabilityIcon, { color: data.isAvailable ? COLOURS.green : COLOURS.red }]}
-          />
-          <Text style={{ fontSize: 12, color: data.isAvailable ? COLOURS.green : COLOURS.red }}>
-            {data.isAvailable ? 'Available' : 'Unavailable'}
-          </Text>
-        </View>
-      )}
-      <Text> ${data.productPrice}</Text>
+      {data.category === 'accessory' || data.category === 'product' ? (
+        data.isAvailable ? (
+          <View style={styles.availabilityContainer}>
+            <FontAwesome name="circle" style={{ fontSize: 12, marginRight: 6, color: COLOURS.green }} />
+            <Text style={{ fontSize: 12, color: COLOURS.green }}>Available</Text>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <FontAwesome name="circle" style={{ fontSize: 12, marginRight: 6, color: COLOURS.red }} />
+            <Text style={{ fontSize: 12, color: COLOURS.red }}>Unavailable</Text>
+          </View>
+        )
+      ) : null}
+      <Text>${data.productPrice}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderMenuItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={() => { setDropdownVisible(false); navigation.navigate(item.route); }}
+      style={[styles.optionContainer, { backgroundColor: item.backgroundColor }]}
+    >
+      <FontAwesome name={item.icon} style={styles.optionIcon} />
+      <Text style={styles.optionText}>{item.label}</Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={COLOURS.white} barStyle="dark-content" />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={true}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <TouchableOpacity onPress={() => setDropdownVisible(!isDropdownVisible)}>
             <Entypo name="menu" style={styles.menuIcon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
-            <MaterialCommunityIcons
-              name="heart-circle"
-              style={styles.heartIcon}
-            />
+            <MaterialCommunityIcons name="heart-circle" style={styles.heartIcon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('MyCart')}>
-            <MaterialCommunityIcons
-              name="cart"
-              style={styles.cartIcon}
-            />
+            <MaterialCommunityIcons name="cart" style={styles.cartIcon} />
           </TouchableOpacity>
         </View>
 
-        <Modal
-          isVisible={isDropdownVisible}
-          onBackdropPress={() => setDropdownVisible(false)}
-          animationIn="fadeInDown"
-          animationOut="fadeOutUp"
-          style={styles.modalContainer}
-        >
+        {isDropdownVisible && (
           <View style={styles.dropdownMenu}>
-            <View style={styles.profileContainer}>
-              <Image
-                source={require('../database/images/login.png')}
-                style={styles.avatar}
-              />
-              <Text>{username}</Text>
-            </View>
-
-           
+            <FlatList  scrollEnabled={false} 
+              data={menuItems}
+              renderItem={renderMenuItem}
+              keyExtractor={(item) => item.label}
+            />
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>LOGOUT</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
+        )}
 
         <View style={styles.productSection}>
           <Text style={styles.title}>Hi-Fi Shop &amp; Service</Text>
@@ -174,25 +184,34 @@ const Home = ({ navigation, route }) => {
 
         <View style={styles.productGridContainer}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Products</Text>
-            <Text style={styles.sectionLink}>SeeAll</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.sectionTitle}>Products</Text>
+            </View>
+            <Text style={styles.sectionLink} onPress={() => navigation.navigate('ViewAllProduct')}>
+              See All
+            </Text>
           </View>
+
           <View style={styles.productGrid}>
-            {products.map(data => (
-              <ProductCard data={data} key={data.id} />
-            ))}
+            {products.slice(0, 6).map(data => {
+              return <ProductCard data={data} key={data.id} />;
+            })}
           </View>
         </View>
 
         <View style={styles.productGridContainer}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Accessories</Text>
-            <Text style={styles.sectionLink}>SeeAll</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.sectionTitle}>Accessories</Text>
+            </View>
+            <Text style={styles.sectionLink} onPress={() => navigation.navigate('ViewAllAccessories')}>
+              See All
+            </Text>
           </View>
           <View style={styles.productGrid}>
-            {accessory.map(data => (
-              <ProductCard data={data} key={data.id} />
-            ))}
+            {accessory.slice(0, 6).map(data => {
+              return <ProductCard data={data} key={data.id} />;
+            })}
           </View>
         </View>
       </ScrollView>
@@ -234,11 +253,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLOURS.backgroundLight,
   },
-  modalContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 0,
-  },
   dropdownMenu: {
     backgroundColor: '#fff',
     padding: 15,
@@ -247,21 +261,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
-    elevation: 40,
-    width: '90%',
-  },
-  profileContainer: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 10,
-  },
-  menuOptions: {
-    marginVertical: 20,
+    elevation: 5,
+    marginTop: 10,
   },
   optionContainer: {
     flexDirection: 'row',
@@ -279,15 +280,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLOURS.black,
   },
+  logoutButton: {
+    marginTop: 10,
+    width: '100%',
+    height: 45,
+    backgroundColor: "#ff5a5f",
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   logoutText: {
-    fontSize: 20,
-    color: 'red',
-    marginTop: 15,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    backgroundColor: '#ddd',
-    borderRadius: 15,
-    paddingVertical: 5,
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   productSection: {
     paddingHorizontal: 16,
@@ -368,10 +373,6 @@ const styles = StyleSheet.create({
   availabilityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  availabilityIcon: {
-    fontSize: 12,
-    marginRight: 6,
   },
   favoriteIconContainer: {
     position: 'absolute',
