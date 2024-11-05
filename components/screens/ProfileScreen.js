@@ -5,24 +5,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function ProfileScreen({ navigation }) {
     const [userInfo, setUserInfo] = useState(null);
 
-    useEffect(() => {
-        const fetchUserInfo = async () => {
-            const currentUsername = await AsyncStorage.getItem('currentUsername');
-            const storedUsers = await AsyncStorage.getItem('users');
-            const users = storedUsers ? JSON.parse(storedUsers) : [];
+    const fetchUserInfo = async () => {
+        const currentUsername = await AsyncStorage.getItem('currentUsername');
+        const storedUsers = await AsyncStorage.getItem('users');
+        const users = storedUsers ? JSON.parse(storedUsers) : [];
 
-            const user = users.find(u => u.username === currentUsername);
-            if (user) {
-                setUserInfo(user);
-            }
-        };
-        fetchUserInfo();
-    }, []);
-
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem('currentUsername');
-        navigation.navigate("Login");
+        const user = users.find(u => u.username === currentUsername);
+        if (user) {
+            setUserInfo(user);
+        }
     };
+
+    useEffect(() => {
+        fetchUserInfo(); // Load data initially
+
+        const unsubscribe = navigation.addListener('focus', fetchUserInfo); // Reload data when the screen is focused
+
+        return unsubscribe; // Cleanup the listener on component unmount
+    }, [navigation]);
 
     if (!userInfo) {
         return (
@@ -34,9 +34,8 @@ export default function ProfileScreen({ navigation }) {
 
     return (
         <SafeAreaView style={styles.container}>
-            
             <Image
-                source={require('../database/images/login.png')}s
+                source={require('../database/images/login.png')}
                 style={styles.logoImageStyle}
                 resizeMode="contain"
             />
@@ -46,21 +45,18 @@ export default function ProfileScreen({ navigation }) {
                 <Text style={styles.label}>Email:</Text>
                 <Text style={styles.value}>{userInfo.email}</Text>
 
-
-
                 <Text style={styles.label}>Birthday:</Text>
                 <Text style={styles.value}>{userInfo.birthday}</Text>
 
                 <Text style={styles.label}>Address:</Text>
                 <Text style={styles.value}>{userInfo.address}</Text>
             </View>
-
+          
+            <TouchableOpacity style={styles.EditButton} onPress={() => navigation.navigate("EditProfileScreen")}>
+                <Text style={styles.EditText}>Edit Profile</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                 <Text style={styles.backButtonText}>Back to Home</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-                <Text style={styles.logoutText}>Log out</Text>
             </TouchableOpacity>
         </SafeAreaView>
     );
@@ -73,16 +69,10 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     logoImageStyle: {
-        width: 200,
-        height: 200,
+        width: 230,
+        height: 230,
         alignSelf: "center",
-        marginTop: 10,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: "bold",
-        alignSelf: "center",
-        marginVertical: 20,
+        marginTop: 30,
     },
     infoContainer: {
         backgroundColor: "#fff",
@@ -91,7 +81,7 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     label: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: "bold",
         color: "#333",
         marginTop: 10,
@@ -101,38 +91,43 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 10,
-       
+        marginTop: 15,
     },
     value: {
         fontSize: 16,
         color: "#666",
         marginBottom: 10,
     },
-    logoutButton: {
-        marginTop: 10,
-        width: '100%',
-        height: 45,
-        backgroundColor: "#ff5a5f",
+    
+    EditButton: {
+        backgroundColor: "#4CAF50",
+        padding: 10,
         borderRadius: 20,
-        alignItems: "center",
-        justifyContent: "center",
+        alignItems: 'center',
+        marginTop: 140,
     },
-    logoutText: {
-        color: "#fff",
+    EditText: {
         fontSize: 16,
-        fontWeight: "bold",
+        fontWeight: 'bold',
+        color: '#333',
     },
     backButton: {
         padding: 10,
-        backgroundColor: '#FFEBCC',
+        backgroundColor: '#708090',
         borderRadius: 20,
-        marginTop: 140,
+        marginTop: 20,
         alignItems: 'center',
     },
     backButtonText: {
         fontSize: 16,
         fontWeight: 'bold',
         color: '#333',
+    },
+    signupText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#4CAF50',
+        textAlign: 'center',
+        marginTop: 20,
     },
 });

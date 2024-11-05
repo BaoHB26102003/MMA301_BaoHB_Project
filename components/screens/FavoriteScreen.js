@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { MaterialCommunityIcons } from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const FavoritesScreen = ({ navigation }) => {
   const [favorites, setFavorites] = useState([]);
@@ -45,7 +46,10 @@ const FavoritesScreen = ({ navigation }) => {
   };
 
   const ProductCard = ({ data }) => (
+    
     <View style={styles.productCard}>
+       <TouchableOpacity onPress={() => navigation.navigate('ProductInfo', { productID: data.id })}>
+      
       <View style={styles.productImageContainer}>
         {data.isOff && (
           <View style={styles.discountBadge}>
@@ -62,11 +66,13 @@ const FavoritesScreen = ({ navigation }) => {
       </View>
       <Text style={styles.productName}>{data.productName}</Text>
       <Text style={styles.productPrice}>${data.productPrice}</Text>
+      </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={styles.container}>
+   
       <Text style={styles.title}>Favorite Products</Text>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.productGrid}>

@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     borderWidth: 1.5,
-    height: 45,
+    height: 50,
     borderColor: '#888',
     borderRadius: 100,
     paddingHorizontal: 20,
